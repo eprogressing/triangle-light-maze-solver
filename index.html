@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>三角迷阵路径求解器</title>
+  <meta name="theme-color" content="#f4f7fb">
+  <meta
+    name="description"
+    content="一个纯前端、可离线运行的三角迷阵路径求解小工具，支持交互式标记发光点并高亮最佳路线。"
+  >
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="三角迷阵路径求解器">
+  <meta
+    property="og:description"
+    content="一个纯前端、可离线运行的三角迷阵路径求解小工具，支持交互式标记发光点并高亮最佳路线。"
+  >
+  <meta property="og:image" content="assets/screenshot-home.png">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero" aria-labelledby="pageTitle">
+      <h1 id="pageTitle">三角迷阵路径求解器</h1>
+      <p class="hero-subtitle">输入行数，点亮节点，运行。</p>
+    </header>
+
+    <main class="layout">
+      <aside class="panel control-panel" aria-labelledby="controlTitle">
+        <div class="panel-header">
+          <h2 id="controlTitle">开始</h2>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="rowsInput">三角迷阵行数</label>
+          <input
+            id="rowsInput"
+            class="input-control"
+            type="number"
+            min="1"
+            max="30"
+            step="1"
+            inputmode="numeric"
+            placeholder="请输入 1 到 30 的正整数"
+            aria-describedby="rowHint"
+          >
+          <p id="rowHint" class="field-hint">支持 1 到 30 行。</p>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="tieBreakSelect">平分规则</label>
+          <select id="tieBreakSelect" class="input-control">
+            <option value="preferLeft">平分时优先左侧</option>
+            <option value="preferRight">平分时优先右侧</option>
+          </select>
+          <p class="field-hint">用于多条同分路径的取舍。</p>
+        </div>
+
+        <div class="action-row" aria-label="操作按钮">
+          <button id="generateBtn" class="button button-primary" type="button">生成迷阵</button>
+          <button id="runBtn" class="button button-accent" type="button" disabled>运行求解</button>
+          <button id="exampleBtn" class="button button-secondary button-wide" type="button">查看示例解</button>
+          <button id="clearBtn" class="button button-secondary" type="button" disabled>清空发光点</button>
+          <button id="resetBtn" class="button button-secondary" type="button" disabled>完全重置</button>
+        </div>
+
+        <div class="helper-box" aria-label="辅助信息">
+          <div id="statusBox" class="status-box" role="status" aria-live="polite" data-state="info">
+            输入行数，或查看示例解。
+          </div>
+
+          <ul class="legend-list">
+            <li class="legend-item">
+              <span class="legend-dot dot-normal" aria-hidden="true"></span>
+              <span>普通点</span>
+            </li>
+            <li class="legend-item">
+              <span class="legend-dot dot-glow" aria-hidden="true"></span>
+              <span>发光点</span>
+            </li>
+            <li class="legend-item">
+              <span class="legend-dot dot-path" aria-hidden="true"></span>
+              <span>路径点</span>
+            </li>
+            <li class="legend-item">
+              <span class="legend-dot dot-mixed" aria-hidden="true"></span>
+              <span>路径且发光</span>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+      <section class="panel stage-panel" aria-labelledby="stageTitle">
+        <div class="panel-header">
+          <h2 id="stageTitle">迷阵</h2>
+        </div>
+
+        <div class="stat-row" aria-label="迷阵概览">
+          <article class="stat-card">
+            <span class="stat-label">行数</span>
+            <strong id="rowsStat">--</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-label">发光点</span>
+            <strong id="glowStat">0</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-label">状态</span>
+            <strong id="modeStat">未生成</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-label">规则</span>
+            <strong id="ruleStat">左侧优先</strong>
+          </article>
+        </div>
+
+        <div id="mazeStage" class="maze-stage">
+          <div id="mazePlaceholder" class="maze-placeholder">
+            <p class="placeholder-title">输入行数或查看示例解</p>
+            <p class="placeholder-flow">生成迷阵 → 点亮节点 → 运行求解</p>
+          </div>
+
+          <div id="mazeScroll" class="maze-scroll">
+            <svg
+              id="mazeSvg"
+              class="maze-svg"
+              viewBox="0 0 100 100"
+              role="img"
+              aria-label="三角迷阵 SVG 视图"
+            ></svg>
+          </div>
+        </div>
+
+        <section class="result-panel" aria-labelledby="resultTitle">
+          <h3 id="resultTitle" class="section-title">结果</h3>
+
+          <div class="result-grid">
+            <article class="result-card">
+              <span class="result-label">最优得分</span>
+              <strong id="scoreValue">--</strong>
+            </article>
+            <article class="result-card">
+              <span class="result-label">捕获率</span>
+              <strong id="rateValue">--</strong>
+            </article>
+            <article class="result-card">
+              <span class="result-label">状态</span>
+              <strong id="resultStateValue">未生成</strong>
+            </article>
+          </div>
+
+          <dl class="result-list">
+            <div class="result-item result-item-wide">
+              <dt>最优路径</dt>
+              <dd id="pathValue" class="path-value">运行后显示最优路径。</dd>
+            </div>
+            <div class="result-item">
+              <dt>捕获数</dt>
+              <dd id="captureValue">--</dd>
+            </div>
+            <div class="result-item">
+              <dt>平分规则</dt>
+              <dd id="ruleValue">平分时优先左侧</dd>
+            </div>
+            <div class="result-item">
+              <dt>时间复杂度</dt>
+              <dd id="complexityValue">O(n^2)</dd>
+            </div>
+          </dl>
+
+          <p id="resultSummary" class="result-note" aria-live="polite">先生成迷阵或查看示例解。</p>
+
+          <details id="algorithmDetails" class="algorithm-details">
+            <summary>算法详情</summary>
+            <div class="algorithm-body">
+              <p id="algorithmSummary" class="algorithm-note">运行后显示 DP 与回溯说明。</p>
+
+              <div class="algorithm-block">
+                <h4>DP 表</h4>
+                <pre id="dpTableValue" class="algorithm-pre">运行后显示 DP 表。</pre>
+              </div>
+
+              <div class="algorithm-block">
+                <h4>回溯说明</h4>
+                <p id="backtrackValue" class="algorithm-note">运行后显示回溯路径。</p>
+              </div>
+            </div>
+          </details>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="solver.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
